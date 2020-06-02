@@ -9,8 +9,10 @@ output:
 ## Loading and preprocessing the data
 
 ```{r}
+library (dplyr)
+library (lubridate)
 if (!file.exists ("activity.csv"))
-  unip ("activity.zip")
+  unzip ("activity.zip")
 act <- read.csv ("activity.csv")
 ```
 
@@ -22,6 +24,8 @@ hist (dailyStepTotal$steps, xlab = "Total Steps per Day")
 abline (v = mean (dailyStepTotal$steps), col = "red")
 legend ("topright", lty = 1, bty = "n", col = "red", legend = "Mean Steps per Day")
 
+# There are up to five significant digits in each number; by reporting integers, we keep that 
+#   relatively taken care of
 meanStepsPerDay <- sprintf ("%.0f", mean (dailyStepTotal$steps))
 medianStepsPerDay <- sprintf ("%.0f",median (dailyStepTotal$steps))
 ```
@@ -57,7 +61,9 @@ Total number of missing values: `r numMissingValues`.
 
 ```{r}
 # Strategy for imputing missing values: use average for that interval over all days in dataset
-avgLookupVector <- rep (0L, max (stepsEachInterval$interval))
+#   Create a reverse lookup vector so that we can get the average steps for a given interval, given the interval
+#   intervals start with 0, vectors start with 1, so I'm looking up (interval + 1) in the vector
+avgLookupVector <- rep (0L, max (stepsEachInterval$interval) + 1)
 for (i in 1:length (stepsEachInterval$steps)) {
   interval <- stepsEachInterval$interval[i]
   avgLookupVector[interval+1] <- stepsEachInterval$steps[i]
@@ -70,18 +76,33 @@ for (i in 1:length (imputedAct$steps)) {
 }
 
 dailyStepTotal <- aggregate (. ~ date, data = imputedAct, sum)
-hist (dailyStepTotal$steps, xlab = "Total Steps per Day")
+hist (dailyStepTotal$steps, main = "After Imputing Missing Data", xlab = "Total Steps per Day")
 abline (v = mean (dailyStepTotal$steps), col = "red")
 legend ("topright", lty = 1, bty = "n", col = "red", legend = "Mean Steps per Day")
 
 meanStepsPerDay <- sprintf ("%.0f", mean (dailyStepTotal$steps))
 medianStepsPerDay <- sprintf ("%.0f",median (dailyStepTotal$steps))
+
+
 ```
 
 Mean steps per day, using imputed missing values: `r meanStepsPerDay`  
 Median steps per day, using imputed missing values: `r medianStepsPerDay`
 
-
-
+These values do not differ significantly from those in the first part of the assignment.  
+Imputing missing data on the estimates of the total daily number of steps made no significant difference.
 
 ## Are there differences in activity patterns between weekdays and weekends?
+
+```{r}
+imputedDaysOfWeek <- weekdays (ymd (imputedAct$date))
+imputedWeekends <- imputedDaysOfWeek == "Saturday" | daysOfWeek == "Sunday"
+imputedWeekParts <- rep ("weekday", length (imputedWeekends))
+imputedWeekParts[imputedWeekends] = "weekend"
+imputedAct[["partOfWeek"]] <- factor (imputedWeekParts)
+
+par (mfrow = c(2, 1))
+with (subset (imputedAct, partOfWeek == "weekend"), plot (date, steps, type = "l", main = "weekend"))
+with (subset (imputedAct, partOfWeek == "weekday"), plot (date, steps, type = "l", main = "weekday"))
+```
+
