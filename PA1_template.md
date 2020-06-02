@@ -10,6 +10,12 @@ output:
 
 
 ```r
+library (dplyr)
+library (lubridate)
+```
+
+
+```r
 if (!file.exists ("activity.csv"))
   unzip ("activity.zip")
 act <- read.csv ("activity.csv")
@@ -34,8 +40,8 @@ meanStepsPerDay <- sprintf ("%.0f", mean (dailyStepTotal$steps))
 medianStepsPerDay <- sprintf ("%.0f",median (dailyStepTotal$steps))
 ```
 
-Mean steps per day: 10766  
-Median steps per day: 10765
+**Mean steps per day: 10766**    
+**Median steps per day: 10765**  
 
 
 ## What is the average daily activity pattern?
@@ -55,7 +61,7 @@ legend ("topright", lty = 1, bty = "n", col = "blue", legend = "Interval With Ma
 
 ![](PA1_template_files/figure-html/unnamed-chunk-3-1.png)<!-- -->
 
-The interval number with the maximum average number of steps is: 835.
+**The interval number with the maximum average number of steps is: 835.**  
 
 ## Imputing missing values
 
@@ -64,7 +70,7 @@ The interval number with the maximum average number of steps is: 835.
 numMissingValues <- sum (is.na(act$steps))
 ```
 
-Total number of missing values: 2304.  
+**Total number of missing values: 2304.**    
 
 
 ```r
@@ -96,10 +102,40 @@ meanStepsPerDay <- sprintf ("%.0f", mean (dailyStepTotal$steps))
 medianStepsPerDay <- sprintf ("%.0f",median (dailyStepTotal$steps))
 ```
 
-Mean steps per day, using imputed missing values: 10766  
-Median steps per day, using imputed missing values: 10766
+**Mean steps per day, using imputed missing values: 10766**  
+**Median steps per day, using imputed missing values: 10766**  
 
-These values do not differ significantly from those in the first part of the assignment.  
-Imputing missing data on the estimates of the total daily number of steps made no significant difference.
+**These values do not differ significantly from those in the first part of the assignment.**   
+**Imputing missing data on the estimates of the total daily number of steps made no significant difference.**
 
 ## Are there differences in activity patterns between weekdays and weekends?
+
+
+```r
+imputedDaysOfWeek <- weekdays (ymd (imputedAct$date))
+imputedWeekends <- imputedDaysOfWeek == "Saturday" | imputedDaysOfWeek == "Sunday"
+imputedWeekParts <- rep ("weekday", length (imputedWeekends))
+imputedWeekParts[imputedWeekends] = "weekend"
+imputedAct[["partOfWeek"]] <- factor (imputedWeekParts)
+
+weekendSteps <- subset (imputedAct, partOfWeek == "weekend")
+aggWeekendSteps <- aggregate (steps ~ interval, data = weekendSteps, mean)
+weekdaySteps <- subset (imputedAct, partOfWeek == "weekday")
+aggWeekdaySteps <- aggregate (steps ~ interval, data = weekdaySteps, mean)
+
+par (mfrow = c(2, 1), mar = c(2,4,2,1), oma = c(0, 2, 0, 0))
+with (aggWeekendSteps, plot (interval, steps, type = "l", ylim = c(0, 250), main = "weekend", xlab = "", ylab = ""))
+par (mar = c(5,4,2,1))
+with (aggWeekdaySteps, plot (interval, steps, type = "l", ylim = c(0, 250), main = "weekday", xlab = "Interval", ylab = ""))
+mtext ("Number of steps", side = 2, line = 0, outer = TRUE)
+```
+
+![](PA1_template_files/figure-html/unnamed-chunk-6-1.png)<!-- -->
+
+**Weekdays have more steps per day on average then do weekend days.**  
+  
+    
+    
+    
+
+
