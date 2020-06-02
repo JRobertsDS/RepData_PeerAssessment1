@@ -8,17 +8,79 @@ output:
 
 ## Loading and preprocessing the data
 
-
+```{r}
+if (!file.exists ("activity.csv"))
+  unip ("activity.zip")
+act <- read.csv ("activity.csv")
+```
 
 ## What is mean total number of steps taken per day?
 
+```{r}
+dailyStepTotal <- aggregate (. ~ date, data = act, sum)
+hist (dailyStepTotal$steps, xlab = "Total Steps per Day")
+abline (v = mean (dailyStepTotal$steps), col = "red")
+legend ("topright", lty = 1, bty = "n", col = "red", legend = "Mean Steps per Day")
+
+meanStepsPerDay <- sprintf ("%.0f", mean (dailyStepTotal$steps))
+medianStepsPerDay <- sprintf ("%.0f",median (dailyStepTotal$steps))
+```
+
+Mean steps per day: `r meanStepsPerDay`  
+Median steps per day: `r medianStepsPerDay`
 
 
 ## What is the average daily activity pattern?
 
+```{r}
+stepsEachInterval <- aggregate (steps ~ interval, data = act, mean)
+with (stepsEachInterval, plot (interval, steps, type = "l", 
+      xlab = "5 Minute Intervals Throughout Each Day", ylab = "Steps"))
 
+rowNum <- which (stepsEachInterval$steps == max (stepsEachInterval$steps))
+intervalWithMaxSteps <- stepsEachInterval$interval[rowNum]
+
+abline (v = intervalWithMaxSteps, col = "blue")
+legend ("topright", lty = 1, bty = "n", col = "blue", legend = "Interval With Max Steps")
+
+```
+
+The interval number with the maximum average number of steps is: `r intervalWithMaxSteps`.
 
 ## Imputing missing values
+
+```{r}
+numMissingValues <- sum (is.na(act$steps))
+```
+
+Total number of missing values: `r numMissingValues`.  
+
+```{r}
+# Strategy for imputing missing values: use average for that interval over all days in dataset
+avgLookupVector <- rep (0L, max (stepsEachInterval$interval))
+for (i in 1:length (stepsEachInterval$steps)) {
+  interval <- stepsEachInterval$interval[i]
+  avgLookupVector[interval+1] <- stepsEachInterval$steps[i]
+}
+imputedAct <- act
+for (i in 1:length (imputedAct$steps)) {
+  if (is.na (imputedAct$steps[i])) {
+      imputedAct$steps[i] <- avgLookupVector[imputedAct$interval[i] + 1]
+  }
+}
+
+dailyStepTotal <- aggregate (. ~ date, data = imputedAct, sum)
+hist (dailyStepTotal$steps, xlab = "Total Steps per Day")
+abline (v = mean (dailyStepTotal$steps), col = "red")
+legend ("topright", lty = 1, bty = "n", col = "red", legend = "Mean Steps per Day")
+
+meanStepsPerDay <- sprintf ("%.0f", mean (dailyStepTotal$steps))
+medianStepsPerDay <- sprintf ("%.0f",median (dailyStepTotal$steps))
+```
+
+Mean steps per day, using imputed missing values: `r meanStepsPerDay`  
+Median steps per day, using imputed missing values: `r medianStepsPerDay`
+
 
 
 
